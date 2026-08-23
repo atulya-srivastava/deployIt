@@ -144,5 +144,5 @@ http://my-cool-site.localhost:8000
 ## Documentation
 
 For full step-by-step setup guides (Kafka, AWS ECR, ECS Fargate, S3 Bucket Policies, IAM permissions), see:
-- [AWS & Redis Setup Guide](./AWS_AND_REDIS_SETUP_GUIDE.md)
+- [Setup Guide](./SETUP_GUIDE.md)
 
