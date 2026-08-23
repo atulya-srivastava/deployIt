@@ -15,7 +15,7 @@ const fontMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DeployIt – Deploy your projects instantly",
+  title: "deployIt – Deploy your projects instantly",
   description:
     "A Vercel-like deployment platform. Push a Git repo, get a live preview URL.",
 };

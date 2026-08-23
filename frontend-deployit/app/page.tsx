@@ -120,7 +120,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Rocket className="h-7 w-7 text-primary" />
-          <h1 className="text-2xl font-bold tracking-tight">DeployIt</h1>
+          <h1 className="text-2xl font-bold tracking-tight">deploy1t</h1>
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>

@@ -78,7 +78,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Rocket className="h-6 w-6" />
             </div>
-            <CardTitle className="text-xl font-bold">Welcome to DeployIt</CardTitle>
+            <CardTitle className="text-xl font-bold">Welcome to deploy1t</CardTitle>
             <CardDescription>
               Sign in to access your deployment dashboard
             </CardDescription>

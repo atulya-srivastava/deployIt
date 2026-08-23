@@ -254,7 +254,7 @@ export default function ProjectPage({
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <Rocket className="h-5 w-5 text-primary" />
-        <h1 className="text-lg font-bold tracking-tight">DeployIt</h1>
+        <h1 className="text-lg font-bold tracking-tight">deploy1t</h1>
       </div>
 
       <Separator className="my-6" />
