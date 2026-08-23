@@ -62,7 +62,7 @@ The project consists of 3 primary components:
 
 Create `.env` files in each component directory (`api-server`, `build-server`, and `reverse-proxy-s3`) based on their `.env.example` files.
 
-> Note: For detailed instructions on AWS, Redis, and Apache Kafka setup, refer to the [AWS & Redis Setup Guide](./AWS_AND_REDIS_SETUP_GUIDE.md).
+> Note: For detailed instructions on AWS, Redis, and Apache Kafka setup, refer to the [Setup Guide](./SETUP_GUIDE.md).
 
 ### 2. Install Dependencies
 
