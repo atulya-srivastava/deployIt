@@ -1,4 +1,4 @@
-# Step-by-Step AWS & Redis Setup Guide for `deployit`
+# Step-by-Step AWS, Redis, Kafka and ClickHouse Setup Guide for `deployit`
 
 This guide explains how to set up Redis and AWS services (S3, ECR, ECS Fargate, IAM) to turn this project into a live working prototype.
 
