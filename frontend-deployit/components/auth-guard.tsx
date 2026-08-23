@@ -14,14 +14,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Rocket, Lock, LogOut } from "lucide-react";
 
-const DUMMY_USER = process.env.NEXT_PUBLIC_ADMIN_USER;
-const DUMMY_PASS = process.env.NEXT_PUBLIC_ADMIN_PASS;
-
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const authStatus = localStorage.getItem("deployit_authenticated");
@@ -32,14 +30,30 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.trim() === DUMMY_USER && password === DUMMY_PASS) {
-      localStorage.setItem("deployit_authenticated", "true");
-      setIsAuthenticated(true);
-      setError("");
-    } else {
-      setError("Invalid username or password");
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username.trim(), password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        localStorage.setItem("deployit_authenticated", "true");
+        setIsAuthenticated(true);
+      } else {
+        setError(data.error || "Invalid username or password");
+      }
+    } catch {
+      setError("An error occurred during authentication");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -100,9 +114,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-3 mt-3">
-              <Button type="submit" className="w-full">
-                <Lock className="mr-2 h-4 w-4" />
-                Sign In
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <>
+                    <Lock className="mr-2 h-4 w-4" />
+                    Sign In
+                  </>
+                )}
               </Button>
             </CardFooter>
           </form>
