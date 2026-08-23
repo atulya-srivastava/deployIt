@@ -1,6 +1,8 @@
-# DeployIt
+# deeploy1t
 
-**DeployIt** is an event-driven, containerized deployment platform. It takes any frontend GitHub repository, builds it automatically inside isolated containers, uploads static outputs to AWS S3, and streams real-time build logs to the frontend via an event-driven pipeline using **Aiven Apache Kafka**, **Redis Pub/Sub**, **Server-Sent Events (SSE)**, and **Aiven ClickHouse**.
+**deploy1t** is an event-driven, containerized deployment platform. It takes any frontend GitHub repository, builds it automatically inside isolated containers, uploads static outputs to AWS S3, and streams real-time build logs to the frontend via an event-driven pipeline using **Aiven Apache Kafka**, **Redis Pub/Sub**, **Server-Sent Events (SSE)**, and **Aiven ClickHouse**. 
+
+deploy It in 1 go.
 
 ---
 
