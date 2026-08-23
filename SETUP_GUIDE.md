@@ -4,21 +4,76 @@ This guide explains how to set up Redis and AWS services (S3, ECR, ECS Fargate, 
 
 ---
 
-## 1. Setting Up Redis (Log Streaming)
+## 1. Setting Up Redis (Log Streaming & SSE Pub/Sub)
 
-You can use **Upstash** (Free Cloud Redis) or run Redis locally using Docker.
+You can use **Upstash Cloud Redis** (Recommended & Free) or run Redis locally using Docker.
 
 ### Option A: Upstash Cloud Redis (Recommended & Free)
 1. Go to [Upstash.com](https://upstash.com) and create a free account.
 2. Click **Create Database**, choose Redis, select a region, and click **Create**.
-3. Under the database details, copy the **Redis Connect URL** (starts with `rediss://...` or `redis://...`).
-4. Set this as your `REDIS_URL` in your `.env` files.
+3. Under database details, copy the **TLS Connect URL** (starts with `rediss://...`).
+4. Set `REDIS_URL` in `api-server/.env` and `build-server/.env`:
+   ```env
+   REDIS_URL="rediss://default:your_password@your-database.upstash.io:6379"
+   ```
+   > **How AWS ECS Receives `REDIS_URL`:**
+   > When a user requests a deployment, `api-server` dynamically passes `process.env.REDIS_URL` into the AWS ECS Task as a container environment variable. Whenever you update `REDIS_URL` in `api-server/.env`, simply restart `api-server` (`node server.js`). New AWS ECS tasks will automatically receive the updated Redis URL!
 
 ### Option B: Local Redis (via Docker)
 ```bash
 docker run -d --name redis-local -p 6379:6379 redis:latest
 ```
 Set `REDIS_URL=redis://localhost:6379` in your `.env` files.
+
+---
+
+## 1.1 Setting Up Aiven Apache Kafka (Log Ingestion Pipeline)
+
+The build log streaming pipeline uses Apache Kafka for high-throughput container log ingestion. If `KAFKA_BROKERS` is unconfigured in `.env`, the application gracefully falls back to direct Redis Pub/Sub.
+
+### Step 1: Create Aiven Kafka Service
+1. Log in to [Aiven Console](https://console.aiven.io/).
+2. Click **Create Service** → Select **Apache Kafka** → Choose plan/cloud provider → Click **Create Service**.
+3. Under **Topics**, click **Add Topic** → Topic Name: `container-logs` → Click **Add Topic**.
+4. Copy the connection details from Aiven Overview tab:
+   - `KAFKA_BROKERS`: `kafka-service-name.aivencloud.com:24134` (Service URI without scheme)
+   - `KAFKA_USERNAME`: `avnadmin` (or user created under User Access)
+   - `KAFKA_PASSWORD`: Your Aiven user password
+   - `KAFKA_SASL_MECHANISM`: `scram-sha-256`
+
+---
+
+## 1.2 Setting Up Aiven ClickHouse (Historical Log Retention)
+
+ClickHouse stores build logs for long-term query access and historical log retention. If `CLICKHOUSE_HOST` is unconfigured, real-time log streaming continues to work normally while ClickHouse log storage is skipped.
+
+### Step 1: Create Aiven ClickHouse Service
+1. In [Aiven Console](https://console.aiven.io/), click **Create Service** → Select **ClickHouse** → Click **Create Service**.
+2. From the Service Overview, copy:
+   - **HTTPS Service URI**: `https://clickhouse-service-name.aivencloud.com:24136`
+   - **Username**: `avnadmin` (or your user)
+   - **Password**: Your ClickHouse user password
+3. Set the variables in `api-server/.env`:
+   ```env
+   CLICKHOUSE_HOST=https://clickhouse-service-name.aivencloud.com:24136
+   CLICKHOUSE_USER=avnadmin
+   CLICKHOUSE_PASSWORD=your_password
+   CLICKHOUSE_DATABASE=default
+   ```
+4. The `api-server` automatically initializes the `build_logs` MergeTree table on startup.
+
+---
+
+### Option B: Local Development (Kafka & ClickHouse via Docker)
+For quick local testing without cloud services:
+```bash
+# Local Kafka
+docker run -d --name kafka-local -p 9092:9092 apache/kafka:latest
+
+# Local ClickHouse
+docker run -d --name clickhouse-local -p 8123:8123 -p 9000:9000 clickhouse/clickhouse-server:latest
+```
+Set `KAFKA_BROKERS=localhost:9092` and `CLICKHOUSE_HOST=http://localhost:8123` in `.env`.
 
 ---
 
@@ -66,8 +121,10 @@ Set `REDIS_URL=redis://localhost:6379` in your `.env` files.
 
 ## 4. Building & Pushing the Build Server Docker Image to AWS ECR
 
+Whenever you make code changes to `build-server/script.js` or `build-server/main.sh`, you must rebuild and push the Docker image to AWS ECR so AWS ECS runs your updated code:
+
 1. Open **Amazon ECR** (Elastic Container Registry) in AWS Console.
-2. Click **Create repository** → Name: `builder-image` → Public or Private → Click **Create**.
+2. Click **Create repository** → Name: `builder-image` → Click **Create**.
 3. Authenticate Docker to your AWS ECR (replace `<ACCOUNT_ID>` and `<REGION>`):
    ```bash
    aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com
@@ -75,7 +132,7 @@ Set `REDIS_URL=redis://localhost:6379` in your `.env` files.
 4. Build, tag, and push the image from `build-server` folder:
    ```bash
    cd build-server
-   docker build -t builder-image .
+   docker build -t builder-image -f dockerfile .
    docker tag builder-image:latest <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/builder-image:latest
    docker push <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/builder-image:latest
    ```
@@ -83,6 +140,9 @@ Set `REDIS_URL=redis://localhost:6379` in your `.env` files.
 ---
 
 ## 5. Setting Up AWS ECS (Elastic Container Service) & Fargate
+
+### Container Lifecycle & Exit Behavior:
+> The `build-server` container runs as an **ephemeral on-demand worker task** in AWS ECS Fargate. When a build completes (`npm run build` and S3 uploads finish), `script.js` logs `Done...` and exits with code `0` (`process.exit(0)`). This allows AWS ECS to terminate the container task immediately to avoid idle server costs.
 
 ### Step 5A: Create ECS Cluster
 1. Open **Amazon ECS** → **Clusters** → **Create Cluster**.
