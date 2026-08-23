@@ -5,6 +5,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 
+import { AuthGuard } from "@/components/auth-guard";
+
 const raleway = Raleway({subsets:['latin'],variable:'--font-sans'});
 
 const fontMono = Geist_Mono({
@@ -36,7 +38,9 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider defaultTheme="light" enableSystem={false} storageKey="app-theme">
-          {children}
+          <AuthGuard>
+            {children}
+          </AuthGuard>
         </ThemeProvider>
       </body>
     </html>
