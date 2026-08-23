@@ -11,7 +11,8 @@ const { PrismaPg } = require('@prisma/adapter-pg')
 const { PrismaClient } = require('@prisma/client')
 const { initClickHouse, insertLog, getLogsByProjectId } = require('./clickhouse')
 
-const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL
+const connectionString = process.env.DATABASE_URL || process.env.DIRECT_URL
+console.log('[DB CONNECTING]: Using connection string:', connectionString ? connectionString.replace(/:[^:@]+@/, ':****@') : 'NONE')
 const pool = new Pool({ connectionString })
 const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
