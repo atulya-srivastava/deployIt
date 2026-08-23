@@ -1,3 +1,4 @@
+require('dns').setDefaultResultOrder('ipv4first')
 require('dotenv').config()
 const express = require('express')
 const { generateSlug } = require('random-word-slugs')
@@ -83,11 +84,16 @@ app.use(express.json())
 
 // Get all projects
 app.get('/projects', async (req, res) => {
-    const projects = await prisma.project.findMany({
-        include: { deployments: true },
-        orderBy: { createdAt: 'desc' }
-    })
-    return res.json({ status: 'success', data: projects })
+    try {
+        const projects = await prisma.project.findMany({
+            include: { deployments: true },
+            orderBy: { createdAt: 'desc' }
+        })
+        return res.json({ status: 'success', data: projects })
+    } catch (err) {
+        console.error('[GET /projects DB ERROR]:', err.message)
+        return res.status(500).json({ status: 'error', message: 'Failed to fetch projects', error: err.message })
+    }
 })
 
 // Server-Sent Events (SSE) Log Streaming Endpoint
