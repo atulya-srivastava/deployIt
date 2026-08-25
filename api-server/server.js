@@ -3,7 +3,6 @@ require('dotenv').config()
 const express = require('express')
 const { generateSlug } = require('random-word-slugs')
 const { ECSClient, RunTaskCommand } = require('@aws-sdk/client-ecs')
-const { Server } = require('socket.io')
 const Redis = require('ioredis')
 const { Kafka } = require('kafkajs')
 const { Pool } = require('pg')
@@ -18,7 +17,6 @@ const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 const app = express()
 const PORT = process.env.PORT || 9000
-const SOCKET_PORT = process.env.SOCKET_PORT || 9002
 
 process.on('uncaughtException', (err) => {
     if (err && err.message && err.message.includes('max requests limit exceeded')) {
@@ -53,17 +51,6 @@ function createSafeRedisClient(url, name = 'REDIS') {
 }
 
 const redisPublisher = createSafeRedisClient(process.env.REDIS_URL || 'redis://localhost:6379', 'REDIS PUBLISHER')
-
-const io = new Server({ cors: '*' })
-
-io.on('connection', socket => {
-    socket.on('subscribe', channel => {
-        socket.join(channel)
-        socket.emit('message', `Joined ${channel}`)
-    })
-})
-
-io.listen(SOCKET_PORT, () => console.log(`Socket Server running on port ${SOCKET_PORT}`))
 
 const ecsClient = new ECSClient({
     region: process.env.AWS_REGION || 'ap-south-1',
@@ -243,8 +230,6 @@ async function handleLogMessage(projectSlug, messageObj, options = {}) {
         }
     }
 
-    // Emit to Socket.io for legacy/socket clients
-    io.to(`logs:${projectSlug}`).emit('message', rawMessage);
 
     // Store log into Aiven ClickHouse for historical retention
     await insertLog({
