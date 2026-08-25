@@ -24,6 +24,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import toast from "react-hot-toast";
 import { getProjects, deployProject } from "@/lib/api";
 import {
   Rocket,
@@ -73,9 +74,11 @@ export default function DashboardPage() {
   async function fetchProjects() {
     try {
       const data = await getProjects();
+      toast.success("Projects loaded successfully");
       setProjects(data.data || []);
-    } catch {
-      /* silently fail for demo */
+    } catch (err) {
+      console.log("error to fetch proj=",err)
+      toast.error("Error fetching the projects");
     } finally {
       setLoading(false);
     }
@@ -85,9 +88,46 @@ export default function DashboardPage() {
     fetchProjects();
   }, []);
 
+  function parseGitHubUrl(url: string) {
+    const match = url.trim().match(/github\.com\/([^\/]+)\/([^\/\.\s]+)/);
+    if (!match) return null;
+    return { owner: match[1], repo: match[2] };
+  }
+
   async function handleDeploy() {
-    if (!gitURL) return;
-    setDeploying(true);
+    if (!gitURL.trim()) {
+      toast.error("Please enter a Git repository URL");
+      return;
+    }
+
+    // Validate URL format
+    if (!/^https?:\/\/.+/.test(gitURL.trim())) {
+      toast.error("Invalid URL format.");
+      return;
+    }
+
+    // If it's a GitHub URL, check repository existence via GitHub API 
+    const ghRepo = parseGitHubUrl(gitURL);
+    if (ghRepo) {
+      try {
+        setDeploying(true)
+        const res = await fetch(`https://api.github.com/repos/${ghRepo.owner}/${ghRepo.repo}`);
+        if (res.status === 404) {
+          toast.error("GitHub repo not found or is private");
+          return;
+        } else if (!res.ok) {
+          toast.error(`GitHub API returned status ${res.status}`);
+          return;
+        }
+      } catch (err) {
+        console.error("GitHub verification error:", err);
+      }
+      finally{
+        setDeploying(false)
+      }
+    }
+
+    setDeploying(true); 
     try {
       const result = await deployProject(gitURL, projectName || undefined);
       setGitURL("");
@@ -99,8 +139,10 @@ export default function DashboardPage() {
       } else {
         await fetchProjects();
       }
-    } catch {
+    } catch(err) {
       /* handle error */
+      console.log("error while deploying =",err)
+      toast.error("Error deploying project");
     } finally {
       setDeploying(false);
     }

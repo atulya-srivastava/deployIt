@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 
 import { AuthGuard } from "@/components/auth-guard";
+import { Toaster } from "react-hot-toast";
 
 const raleway = Raleway({subsets:['latin'],variable:'--font-sans'});
 
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider defaultTheme="light" enableSystem={false} storageKey="app-theme">
           <AuthGuard>
+            <div><Toaster/></div>
             {children}
           </AuthGuard>
         </ThemeProvider>
